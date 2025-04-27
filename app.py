@@ -64,39 +64,40 @@ def mostrar_inicio():
 def mostrar_carga_excel():
     st.title("📋 Carga tu lista de invitados")
     st.write("Sube un archivo Excel que contenga dos columnas obligatorias: `Nombre` y `Correo`.")
-    
+
     nombre_evento = st.text_input("📌 Ingresa el nombre de tu evento")
     archivo = st.file_uploader("Sube tu archivo (.xlsx)", type=["xlsx"])
 
-    if archivo and nombre_evento:
-        if not st.session_state.procesado:
-            with st.spinner('⏳ Cargando tu evento...'):
-                df = pd.read_excel(archivo)
+    if archivo and nombre_evento and not st.session_state.procesado:
+        with st.spinner('⏳ Cargando tu evento...'):
+            df = pd.read_excel(archivo)
 
-                if "Nombre" not in df.columns or "Correo" not in df.columns:
-                    st.error("❌ El archivo debe tener las columnas 'Nombre' y 'Correo'.")
-                else:
-                    codigos_usados = set()
-                    def generar_codigo():
-                        while True:
-                            codigo = f"{random.randint(0, 9999):04}"
-                            if codigo not in codigos_usados:
-                                codigos_usados.add(codigo)
-                                return codigo
+            if "Nombre" not in df.columns or "Correo" not in df.columns:
+                st.error("❌ El archivo debe tener las columnas 'Nombre' y 'Correo'.")
+            else:
+                codigos_usados = set()
+                def generar_codigo():
+                    while True:
+                        codigo = f"{random.randint(0, 9999):04}"
+                        if codigo not in codigos_usados:
+                            codigos_usados.add(codigo)
+                            return codigo
 
-                    df["Código"] = df.apply(lambda _: generar_codigo(), axis=1)
-                    df["Asistencia"] = ""
+                df["Código"] = df.apply(lambda _: generar_codigo(), axis=1)
+                df["Asistencia"] = ""
 
-                    nuevo_sheet_id, hoja = crear_nueva_hoja(nombre_evento, CARPETA_ID)
-                    hoja.update([df.columns.values.tolist()] + df.values.tolist())
+                nuevo_sheet_id, hoja = crear_nueva_hoja(nombre_evento, CARPETA_ID)
+                hoja.update([df.columns.values.tolist()] + df.values.tolist())
 
-                    st.session_state.sheet_id = nuevo_sheet_id
-                    st.session_state.procesado = True
-            st.experimental_rerun()
-        else:
+                st.session_state.sheet_id = nuevo_sheet_id
+                st.session_state.procesado = True
+                st.success("🎉 ¡Evento creado exitosamente!")
+
+    if st.session_state.procesado:
+        if st.button("Continuar ➡️", use_container_width=True):
             st.session_state.pagina = 'crear_correo'
             st.session_state.procesado = False
-            st.experimental_rerun()
+
 
 def mostrar_crear_correo():
     st.title("✉️ Crear correo personalizado")

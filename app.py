@@ -67,30 +67,29 @@ def mostrar_carga_excel():
     archivo = st.file_uploader("Sube tu archivo (.xlsx)", type=["xlsx"])
 
     if archivo and nombre_evento:
-        df = pd.read_excel(archivo)
+        with st.spinner('⏳ Cargando tu evento...'):
+            df = pd.read_excel(archivo)
 
-        if "Nombre" not in df.columns or "Correo" not in df.columns:
-            st.error("❌ El archivo debe tener las columnas 'Nombre' y 'Correo'.")
-        else:
-            codigos_usados = set()
-            def generar_codigo():
-                while True:
-                    codigo = f"{random.randint(0, 9999):04}"
-                    if codigo not in codigos_usados:
-                        codigos_usados.add(codigo)
-                        return codigo
+            if "Nombre" not in df.columns or "Correo" not in df.columns:
+                st.error("❌ El archivo debe tener las columnas 'Nombre' y 'Correo'.")
+            else:
+                codigos_usados = set()
+                def generar_codigo():
+                    while True:
+                        codigo = f"{random.randint(0, 9999):04}"
+                        if codigo not in codigos_usados:
+                            codigos_usados.add(codigo)
+                            return codigo
 
-            df["Código"] = df.apply(lambda _: generar_codigo(), axis=1)
-            df["Asistencia"] = ""
+                df["Código"] = df.apply(lambda _: generar_codigo(), axis=1)
+                df["Asistencia"] = ""
 
-            # Crear hoja en Drive y cargar datos AUTOMÁTICAMENTE
-            nuevo_sheet_id, hoja = crear_nueva_hoja(nombre_evento, CARPETA_ID)
-            hoja.update([df.columns.values.tolist()] + df.values.tolist())
+                nuevo_sheet_id, hoja = crear_nueva_hoja(nombre_evento, CARPETA_ID)
+                hoja.update([df.columns.values.tolist()] + df.values.tolist())
 
-            st.success(f"✅ Hoja '{nombre_evento}' creada exitosamente en tu Google Drive.")
-
-            st.session_state.sheet_id = nuevo_sheet_id
-            st.session_state.pagina = 'crear_correo'
+                st.session_state.sheet_id = nuevo_sheet_id
+                st.session_state.pagina = 'crear_correo'
+                st.experimental_rerun()
 
 def mostrar_crear_correo():
     st.title("✉️ Crear correo personalizado")
@@ -108,7 +107,7 @@ def mostrar_crear_correo():
 
     with col1:
         texto_correo = st.text_area(
-            "🖍️ Escribe el correo aquí:",
+            "✏️ Escribe el correo aquí:",
             value=st.session_state.texto_correo,
             height=400,
             key="area_correo"
@@ -124,7 +123,6 @@ def mostrar_crear_correo():
 
     if st.button("Guardar plantilla ✅", use_container_width=True):
         st.success("✅ Plantilla de correo guardada correctamente.")
-        # Generar vista previa usando el primer invitado
         if not df.empty:
             preview = st.session_state.texto_correo
             primer_invitado = df.iloc[0]
@@ -135,7 +133,7 @@ def mostrar_crear_correo():
 
     if st.session_state.preview_text:
         st.markdown("---")
-        st.markdown("### 📊 Vista previa del correo:")
+        st.markdown("### 📈 Vista previa del correo:")
         st.write(st.session_state.preview_text)
 
 # Navegación entre páginas

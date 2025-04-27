@@ -23,6 +23,10 @@ st.markdown("""
 # Estado inicial
 if 'pagina' not in st.session_state:
     st.session_state.pagina = 'inicio'
+if 'texto_correo' not in st.session_state:
+    st.session_state.texto_correo = ''
+if 'preview_text' not in st.session_state:
+    st.session_state.preview_text = ''
 
 # Conexión a Google APIs
 creds_dict = json.loads(st.secrets["GOOGLE_CREDENTIALS"])
@@ -34,7 +38,8 @@ drive_service = build('drive', 'v3', credentials=credentials)
 # ID de la carpeta de Drive donde guardarás todos los eventos
 CARPETA_ID = "1oYE2ajyHIcj5m7nedFSkw_RW5wUwMgxy"
 
-# Función para crear una nueva hoja en la carpeta
+# Funciones
+
 def crear_nueva_hoja(nombre_evento, carpeta_id):
     file_metadata = {
         'name': nombre_evento,
@@ -46,7 +51,6 @@ def crear_nueva_hoja(nombre_evento, carpeta_id):
     sheet = gc.open_by_key(sheet_id).sheet1
     return sheet_id, sheet
 
-# Función para mostrar la landing page
 def mostrar_inicio():
     st.markdown("<h1 style='text-align: center; font-size: 60px;'>Checkify ✨</h1>", unsafe_allow_html=True)
     st.markdown("<h3 style='text-align: center; font-weight: normal;'>Organiza tus eventos de forma elegante y eficiente.<br>Genera códigos únicos, automatiza correos y registra la asistencia en segundos.</h3>", unsafe_allow_html=True)
@@ -55,13 +59,11 @@ def mostrar_inicio():
     if st.button("¡Empezar ahora! 🚀", use_container_width=True):
         st.session_state.pagina = 'subir_excel'
 
-# Función para subir y procesar el Excel
 def mostrar_carga_excel():
     st.title("📋 Carga tu lista de invitados")
     st.write("Sube un archivo Excel que contenga dos columnas obligatorias: `Nombre` y `Correo`.")
     
     nombre_evento = st.text_input("📌 Ingresa el nombre de tu evento")
-
     archivo = st.file_uploader("Sube tu archivo (.xlsx)", type=["xlsx"])
 
     if archivo and nombre_evento:
@@ -70,9 +72,7 @@ def mostrar_carga_excel():
         if "Nombre" not in df.columns or "Correo" not in df.columns:
             st.error("❌ El archivo debe tener las columnas 'Nombre' y 'Correo'.")
         else:
-            # Generar códigos únicos
             codigos_usados = set()
-
             def generar_codigo():
                 while True:
                     codigo = f"{random.randint(0, 9999):04}"
@@ -83,30 +83,18 @@ def mostrar_carga_excel():
             df["Código"] = df.apply(lambda _: generar_codigo(), axis=1)
             df["Asistencia"] = ""
 
-            st.success("✅ Archivo procesado exitosamente. ¡Tus códigos han sido generados!")
-
-            st.dataframe(df)
-
-            # Crear hoja en Drive y cargar datos
+            # Crear hoja en Drive y cargar datos AUTOMÁTICAMENTE
             nuevo_sheet_id, hoja = crear_nueva_hoja(nombre_evento, CARPETA_ID)
-
             hoja.update([df.columns.values.tolist()] + df.values.tolist())
 
             st.success(f"✅ Hoja '{nombre_evento}' creada exitosamente en tu Google Drive.")
 
-            # Guardamos ID del nuevo sheet para futuras acciones
             st.session_state.sheet_id = nuevo_sheet_id
+            st.session_state.pagina = 'crear_correo'
 
-            if st.button("Continuar ➡️", use_container_width=True):
-                st.session_state.pagina = 'crear_correo'
-
-# 📝 Función para crear correos personalizados
 def mostrar_crear_correo():
     st.title("✉️ Crear correo personalizado")
 
-    st.write("Redacta el correo que se enviará a cada invitado. Usa los botones para insertar campos dinámicos.")
-
-    # Cargar columnas disponibles del Excel anterior
     try:
         sheet_id = st.session_state.sheet_id
         sheet = gc.open_by_key(sheet_id).sheet1
@@ -116,33 +104,41 @@ def mostrar_crear_correo():
         st.error("❌ Error: No se encontró la hoja de invitados. Regresa y crea el evento primero.")
         return
 
-    # Dividir la pantalla en dos columnas
     col1, col2 = st.columns([3, 1])
 
     with col1:
-        if 'texto_correo' not in st.session_state:
-            st.session_state.texto_correo = ""
-
         texto_correo = st.text_area(
-            "✏️ Escribe el correo aquí:",
+            "🖍️ Escribe el correo aquí:",
             value=st.session_state.texto_correo,
             height=400,
             key="area_correo"
         )
 
     with col2:
-        st.markdown("### 📌 Campos dinámicos:")
+        st.markdown("### 📌 Campos disponibles:")
         for col in columnas:
             if st.button(f"Insertar {col}"):
-                st.session_state.texto_correo += f" {{{col}}} "
+                st.session_state.texto_correo += f" **{{{col}}}** "
 
-    # Guardar el texto actualizado
     st.session_state.texto_correo = texto_correo
 
     if st.button("Guardar plantilla ✅", use_container_width=True):
         st.success("✅ Plantilla de correo guardada correctamente.")
+        # Generar vista previa usando el primer invitado
+        if not df.empty:
+            preview = st.session_state.texto_correo
+            primer_invitado = df.iloc[0]
+            for col in columnas:
+                preview = preview.replace(f"{{{col}}}", str(primer_invitado[col]))
+            preview = preview.replace("**", "")
+            st.session_state.preview_text = preview
 
-# Control de navegación
+    if st.session_state.preview_text:
+        st.markdown("---")
+        st.markdown("### 📊 Vista previa del correo:")
+        st.write(st.session_state.preview_text)
+
+# Navegación entre páginas
 if st.session_state.pagina == 'inicio':
     mostrar_inicio()
 elif st.session_state.pagina == 'subir_excel':

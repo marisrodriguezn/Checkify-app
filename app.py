@@ -2,7 +2,6 @@ import streamlit as st
 import pandas as pd
 import random
 import json
-from io import BytesIO
 import gspread
 from googleapiclient.discovery import build
 from google.oauth2.service_account import Credentials
@@ -27,8 +26,8 @@ if 'texto_correo' not in st.session_state:
     st.session_state.texto_correo = ''
 if 'preview_text' not in st.session_state:
     st.session_state.preview_text = ''
-if 'procesado' not in st.session_state:
-    st.session_state.procesado = False
+if 'evento_creado' not in st.session_state:
+    st.session_state.evento_creado = False
 
 # Conexión a Google APIs
 creds_dict = json.loads(st.secrets["GOOGLE_CREDENTIALS"])
@@ -68,7 +67,7 @@ def mostrar_carga_excel():
     nombre_evento = st.text_input("📌 Ingresa el nombre de tu evento")
     archivo = st.file_uploader("Sube tu archivo (.xlsx)", type=["xlsx"])
 
-    if archivo and nombre_evento and not st.session_state.procesado:
+    if archivo and nombre_evento and not st.session_state.evento_creado:
         with st.spinner('⏳ Cargando tu evento...'):
             df = pd.read_excel(archivo)
 
@@ -90,13 +89,11 @@ def mostrar_carga_excel():
                 hoja.update([df.columns.values.tolist()] + df.values.tolist())
 
                 st.session_state.sheet_id = nuevo_sheet_id
-                st.session_state.procesado = True
-                st.success("🎉 ¡Evento creado exitosamente!")
+                st.session_state.evento_creado = True
 
-    if st.session_state.procesado:
-        if st.button("Continuar ➡️", use_container_width=True):
-            st.session_state.pagina = 'crear_correo'
-            st.session_state.procesado = False
+    if st.session_state.evento_creado:
+        st.success("🎉 ¡Evento creado exitosamente!")
+        st.session_state.pagina = 'crear_correo'
 
 
 def mostrar_crear_correo():
@@ -124,10 +121,8 @@ def mostrar_crear_correo():
     with col2:
         st.markdown("### 📌 Campos disponibles:")
         for col in columnas:
-            if st.button(f"Insertar {col}"):
+            if st.button(f"Insertar {col}", key=f"boton_{col}"):
                 st.session_state.texto_correo += f" **{{{col}}}** "
-
-    st.session_state.texto_correo = texto_correo
 
     if st.button("Guardar plantilla ✅", use_container_width=True):
         st.success("✅ Plantilla de correo guardada correctamente.")

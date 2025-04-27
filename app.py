@@ -119,14 +119,16 @@ def mostrar_crear_correo():
             key="area_correo"
         )
 
-        st.session_state.texto_correo = texto_correo  # 🔥 Siempre sincronizamos el valor real
-
     with col2:
         st.markdown("### 📌 Campos disponibles:")
         for col in columnas:
             if st.button(f"Insertar {col}", key=f"boton_{col}"):
                 st.session_state.texto_correo += f" {{{col}}} "
-                st.experimental_rerun()  # 🔥 Refrescamos para que lo veas en la caja
+                # 🔥 No hacemos rerun, solo cambiamos session_state
+                # Como el text_area depende de session_state, la próxima vez ya aparece
+
+    # Actualizamos session_state al texto real escrito
+    st.session_state.texto_correo = st.session_state.get('area_correo', '')
 
     if st.button("Guardar plantilla ✅", use_container_width=True):
         st.success("✅ Plantilla de correo guardada correctamente.")

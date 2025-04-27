@@ -119,11 +119,14 @@ def mostrar_crear_correo():
             key="area_correo"
         )
 
+        st.session_state.texto_correo = texto_correo  # 🔥 Siempre sincronizamos el valor real
+
     with col2:
         st.markdown("### 📌 Campos disponibles:")
         for col in columnas:
             if st.button(f"Insertar {col}", key=f"boton_{col}"):
-                st.session_state.texto_correo += f" **{{{col}}}** "
+                st.session_state.texto_correo += f" {{{col}}} "
+                st.experimental_rerun()  # 🔥 Refrescamos para que lo veas en la caja
 
     if st.button("Guardar plantilla ✅", use_container_width=True):
         st.success("✅ Plantilla de correo guardada correctamente.")
@@ -132,7 +135,6 @@ def mostrar_crear_correo():
             primer_invitado = df.iloc[0]
             for col in columnas:
                 preview = preview.replace(f"{{{col}}}", str(primer_invitado[col]))
-            preview = preview.replace("**", "")
             st.session_state.preview_text = preview
 
     if st.session_state.preview_text:

@@ -27,6 +27,8 @@ if 'texto_correo' not in st.session_state:
     st.session_state.texto_correo = ''
 if 'preview_text' not in st.session_state:
     st.session_state.preview_text = ''
+if 'procesado' not in st.session_state:
+    st.session_state.procesado = False
 
 # Conexión a Google APIs
 creds_dict = json.loads(st.secrets["GOOGLE_CREDENTIALS"])
@@ -67,29 +69,34 @@ def mostrar_carga_excel():
     archivo = st.file_uploader("Sube tu archivo (.xlsx)", type=["xlsx"])
 
     if archivo and nombre_evento:
-        with st.spinner('⏳ Cargando tu evento...'):
-            df = pd.read_excel(archivo)
+        if not st.session_state.procesado:
+            with st.spinner('⏳ Cargando tu evento...'):
+                df = pd.read_excel(archivo)
 
-            if "Nombre" not in df.columns or "Correo" not in df.columns:
-                st.error("❌ El archivo debe tener las columnas 'Nombre' y 'Correo'.")
-            else:
-                codigos_usados = set()
-                def generar_codigo():
-                    while True:
-                        codigo = f"{random.randint(0, 9999):04}"
-                        if codigo not in codigos_usados:
-                            codigos_usados.add(codigo)
-                            return codigo
+                if "Nombre" not in df.columns or "Correo" not in df.columns:
+                    st.error("❌ El archivo debe tener las columnas 'Nombre' y 'Correo'.")
+                else:
+                    codigos_usados = set()
+                    def generar_codigo():
+                        while True:
+                            codigo = f"{random.randint(0, 9999):04}"
+                            if codigo not in codigos_usados:
+                                codigos_usados.add(codigo)
+                                return codigo
 
-                df["Código"] = df.apply(lambda _: generar_codigo(), axis=1)
-                df["Asistencia"] = ""
+                    df["Código"] = df.apply(lambda _: generar_codigo(), axis=1)
+                    df["Asistencia"] = ""
 
-                nuevo_sheet_id, hoja = crear_nueva_hoja(nombre_evento, CARPETA_ID)
-                hoja.update([df.columns.values.tolist()] + df.values.tolist())
+                    nuevo_sheet_id, hoja = crear_nueva_hoja(nombre_evento, CARPETA_ID)
+                    hoja.update([df.columns.values.tolist()] + df.values.tolist())
 
-                st.session_state.sheet_id = nuevo_sheet_id
-                st.session_state.pagina = 'crear_correo'
-                st.experimental_rerun()
+                    st.session_state.sheet_id = nuevo_sheet_id
+                    st.session_state.procesado = True
+            st.experimental_rerun()
+        else:
+            st.session_state.pagina = 'crear_correo'
+            st.session_state.procesado = False
+            st.experimental_rerun()
 
 def mostrar_crear_correo():
     st.title("✉️ Crear correo personalizado")

@@ -94,6 +94,7 @@ def mostrar_carga_excel():
     if st.session_state.evento_creado:
         st.success("🎉 ¡Evento creado exitosamente!")
         st.session_state.pagina = 'crear_correo'
+        st.experimental_rerun()
 
 
 def mostrar_crear_correo():

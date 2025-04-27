@@ -100,10 +100,47 @@ def mostrar_carga_excel():
             if st.button("Continuar ➡️", use_container_width=True):
                 st.session_state.pagina = 'crear_correo'
 
-# Función vacía para la siguiente fase
+# 📝 Función para crear correos personalizados
 def mostrar_crear_correo():
-    st.title("✉️ Crear correo")
-    st.write("Aquí próximamente podrás crear los correos personalizados para tus invitados.")
+    st.title("✉️ Crear correo personalizado")
+
+    st.write("Redacta el correo que se enviará a cada invitado. Usa los botones para insertar campos dinámicos.")
+
+    # Cargar columnas disponibles del Excel anterior
+    try:
+        sheet_id = st.session_state.sheet_id
+        sheet = gc.open_by_key(sheet_id).sheet1
+        df = pd.DataFrame(sheet.get_all_records())
+        columnas = df.columns.tolist()
+    except:
+        st.error("❌ Error: No se encontró la hoja de invitados. Regresa y crea el evento primero.")
+        return
+
+    # Dividir la pantalla en dos columnas
+    col1, col2 = st.columns([3, 1])
+
+    with col1:
+        if 'texto_correo' not in st.session_state:
+            st.session_state.texto_correo = ""
+
+        texto_correo = st.text_area(
+            "✏️ Escribe el correo aquí:",
+            value=st.session_state.texto_correo,
+            height=400,
+            key="area_correo"
+        )
+
+    with col2:
+        st.markdown("### 📌 Campos dinámicos:")
+        for col in columnas:
+            if st.button(f"Insertar {col}"):
+                st.session_state.texto_correo += f" {{{col}}} "
+
+    # Guardar el texto actualizado
+    st.session_state.texto_correo = texto_correo
+
+    if st.button("Guardar plantilla ✅", use_container_width=True):
+        st.success("✅ Plantilla de correo guardada correctamente.")
 
 # Control de navegación
 if st.session_state.pagina == 'inicio':

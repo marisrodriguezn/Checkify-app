@@ -3,6 +3,7 @@ import pandas as pd
 import random
 import json
 import gspread
+import urllib.parse
 from googleapiclient.discovery import build
 from google.oauth2.service_account import Credentials
 
@@ -94,15 +95,11 @@ def mostrar_carga_excel():
     if st.session_state.evento_creado:
         st.success("🎉 ¡Evento creado exitosamente!")
 
-        # 🔥 Link automático para registrar asistencia
-        import urllib.parse
+        # 🔥 Codificar el ID del Sheet correctamente
+        sheet_id_codificado = urllib.parse.quote(st.session_state.sheet_id)
+        url_registro = f"https://registrocheckify-pktquohfp88ngbripxot4u.streamlit.app/?sheet_id={sheet_id_codificado}"
 
-# 🔥 Codificar correctamente el ID
-sheet_id_codificado = urllib.parse.quote(st.session_state.sheet_id)
-
-url_registro = f"https://registrocheckify-pktquohfp88ngbripxot4u.streamlit.app/?sheet_id={sheet_id_codificado}"
-st.markdown(f"🔗 [Haz clic aquí para registrar asistencia de este evento]({url_registro})", unsafe_allow_html=True)
-
+        st.markdown(f"🔗 [Haz clic aquí para registrar asistencia de este evento]({url_registro})", unsafe_allow_html=True)
 
         if st.button("Continuar ➡️", use_container_width=True):
             st.session_state.pagina = 'crear_correo'
@@ -135,7 +132,6 @@ def mostrar_crear_correo():
             if st.button(f"Insertar {col}", key=f"boton_{col}"):
                 st.session_state.texto_correo += f" {{{col}}} "
 
-    # Actualizamos session_state al texto real escrito
     st.session_state.texto_correo = st.session_state.get('area_correo', '')
 
     if st.button("Guardar plantilla ✅", use_container_width=True):

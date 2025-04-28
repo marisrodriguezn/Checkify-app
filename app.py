@@ -95,8 +95,14 @@ def mostrar_carga_excel():
         st.success("🎉 ¡Evento creado exitosamente!")
 
         # 🔥 Link automático para registrar asistencia
-        url_registro = f"https://checkify-registro.streamlit.app/?sheet_id={st.session_state.sheet_id}"
-        st.markdown(f"🔗 [Haz clic aquí para registrar asistencia de este evento]({url_registro})", unsafe_allow_html=True)
+        import urllib.parse
+
+# 🔥 Codificar correctamente el ID
+sheet_id_codificado = urllib.parse.quote(st.session_state.sheet_id)
+
+url_registro = f"https://registrocheckify-pktquohfp88ngbripxot4u.streamlit.app/?sheet_id={sheet_id_codificado}"
+st.markdown(f"🔗 [Haz clic aquí para registrar asistencia de este evento]({url_registro})", unsafe_allow_html=True)
+
 
         if st.button("Continuar ➡️", use_container_width=True):
             st.session_state.pagina = 'crear_correo'

@@ -93,9 +93,13 @@ def mostrar_carga_excel():
 
     if st.session_state.evento_creado:
         st.success("🎉 ¡Evento creado exitosamente!")
+
+        # 🔥 Link automático para registrar asistencia
+        url_registro = f"https://checkify-registro.streamlit.app/?sheet_id={st.session_state.sheet_id}"
+        st.markdown(f"🔗 [Haz clic aquí para registrar asistencia de este evento]({url_registro})", unsafe_allow_html=True)
+
         if st.button("Continuar ➡️", use_container_width=True):
             st.session_state.pagina = 'crear_correo'
-
 
 def mostrar_crear_correo():
     st.title("✉️ Crear correo personalizado")
@@ -124,8 +128,6 @@ def mostrar_crear_correo():
         for col in columnas:
             if st.button(f"Insertar {col}", key=f"boton_{col}"):
                 st.session_state.texto_correo += f" {{{col}}} "
-                # 🔥 No hacemos rerun, solo cambiamos session_state
-                # Como el text_area depende de session_state, la próxima vez ya aparece
 
     # Actualizamos session_state al texto real escrito
     st.session_state.texto_correo = st.session_state.get('area_correo', '')

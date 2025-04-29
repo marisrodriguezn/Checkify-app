@@ -40,6 +40,9 @@ drive_service = build('drive', 'v3', credentials=credentials)
 # ID de la carpeta de Drive donde guardarás todos los eventos
 CARPETA_ID = "1oYE2ajyHIcj5m7nedFSkw_RW5wUwMgxy"
 
+# EMAIL que tendrá acceso a todos los Sheets creados
+USUARIO_COMPARTIR = "checkify.events@gmail.com"
+
 # Funciones
 
 def crear_nueva_hoja(nombre_evento, carpeta_id):
@@ -50,8 +53,24 @@ def crear_nueva_hoja(nombre_evento, carpeta_id):
     }
     file = drive_service.files().create(body=file_metadata, fields='id').execute()
     sheet_id = file.get('id')
+
+    # Compartir automáticamente con el usuario
+    compartir_hoja_con_usuario(sheet_id, USUARIO_COMPARTIR)
+
     sheet = gc.open_by_key(sheet_id).sheet1
     return sheet_id, sheet
+
+def compartir_hoja_con_usuario(file_id, email_usuario):
+    permission = {
+        'type': 'user',
+        'role': 'writer',
+        'emailAddress': email_usuario
+    }
+    drive_service.permissions().create(
+        fileId=file_id,
+        body=permission,
+        sendNotificationEmail=False
+    ).execute()
 
 def mostrar_inicio():
     st.markdown("<h1 style='text-align: center; font-size: 60px;'>Checkify ✨</h1>", unsafe_allow_html=True)
@@ -95,7 +114,6 @@ def mostrar_carga_excel():
     if st.session_state.evento_creado:
         st.success("🎉 ¡Evento creado exitosamente!")
 
-        # 🔥 Codificar el ID del Sheet correctamente
         sheet_id_codificado = urllib.parse.quote(st.session_state.sheet_id)
         url_registro = f"https://registrocheckify-pktquohfp88ngbripxot4u.streamlit.app/?sheet_id={sheet_id_codificado}"
 
